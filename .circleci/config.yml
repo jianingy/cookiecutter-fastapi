@@ -1,0 +1,37 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@2.1.1
+
+executors:
+  machine_executor_amd64:
+    machine:
+      image: ubuntu-2404:2024.05.1
+    environment:
+      architecture: "amd64"
+      platform: "linux/amd64"
+
+# Define a job to be invoked later in a workflow.
+# See: https://circleci.com/docs/jobs-steps/#jobs-overview & https://circleci.com/docs/configuration-reference/#jobs
+jobs:
+  build-and-test:
+    executor: machine_executor_amd64
+    resource_class: medium
+    steps:
+      - checkout
+      - run:
+          name: install development & testing dependencies
+          command: pip install poetry mypy tox alembic ruff
+      - python/install-packages:
+          pkg-manager: poetry
+      - run:
+          name: Run mypy
+          command: mypy --disallow-untyped-calls --disallow-untyped-defs --disallow-incomplete-defs --ignore-missing-imports src tests
+      - run:
+          name: Run tests
+          command: tox -e lint,py312
+
+workflows:
+  sample:
+    jobs:
+      - build-and-test
